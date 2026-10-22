@@ -81,14 +81,13 @@ class ConnectionManager:
                 except Exception:
                     pass
             _log.info("Connecting as %s@%s", user, dsn)
-            self._conn = oracledb.connect(
-                user=user,
-                password=password,
-                dsn=dsn,
-                config_dir=wallet_dir,
-                wallet_location=wallet_dir,
-                wallet_password=wallet_pass,
-            )
+            kwargs: dict[str, Any] = {"user": user, "password": password, "dsn": dsn}
+            if wallet_dir:
+                kwargs["config_dir"] = wallet_dir
+                kwargs["wallet_location"] = wallet_dir
+            if wallet_pass:
+                kwargs["wallet_password"] = wallet_pass
+            self._conn = oracledb.connect(**kwargs)
             _log.info("Connected — Oracle %s", self._conn.version)
             return f"Connected as {user}@{dsn} — Oracle {self._conn.version}"
 
@@ -370,13 +369,11 @@ end;
         self._batch_queue = []
 
     def is_connected(self) -> bool:
-        if self._conn is None:
-            return False
-        try:
-            self._conn.ping()
-            return True
-        except Exception:
-            return False
+        # Cheap check used as a guard by many tools. Do NOT ping — idle TCP
+        # connections may be reaped by the listener or an SSH tunnel, but
+        # execute() / ensure_connected() will transparently reconnect. A ping
+        # here would falsely report "not connected" and block the caller.
+        return self._conn is not None
 
     def health_metrics(self) -> dict:
         """Return connection health metrics for diagnostics."""

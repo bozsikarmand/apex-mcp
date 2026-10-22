@@ -35,13 +35,12 @@ def apex_connect(
 
     mTLS is required for Oracle Autonomous Database (TLS direct mode may not work).
     """
-    # Validate required parameters before attempting connection
+    # Validate required parameters before attempting connection.
+    # Wallet is optional: self-hosted Oracle (e.g. 23ai Free) does not need mTLS.
     missing = [name for name, val in [
         ("user / ORACLE_DB_USER", user),
         ("password / ORACLE_DB_PASS", password),
         ("dsn / ORACLE_DSN", dsn),
-        ("wallet_dir / ORACLE_WALLET_DIR", wallet_dir),
-        ("wallet_password / ORACLE_WALLET_PASSWORD", wallet_password),
     ] if not val]
     if missing:
         return _json({
